@@ -1,0 +1,11 @@
+E:\windowsLogger\HelloWorld\ConsoleApp1\bin\Debug\netcoreapp2.1\ConsoleApp1.deps.json
+E:\windowsLogger\HelloWorld\ConsoleApp1\bin\Debug\netcoreapp2.1\ConsoleApp1.runtimeconfig.json
+E:\windowsLogger\HelloWorld\ConsoleApp1\bin\Debug\netcoreapp2.1\ConsoleApp1.runtimeconfig.dev.json
+E:\windowsLogger\HelloWorld\ConsoleApp1\bin\Debug\netcoreapp2.1\ConsoleApp1.dll
+E:\windowsLogger\HelloWorld\ConsoleApp1\bin\Debug\netcoreapp2.1\ConsoleApp1.pdb
+E:\windowsLogger\HelloWorld\ConsoleApp1\obj\Debug\netcoreapp2.1\ConsoleApp1.csprojAssemblyReference.cache
+E:\windowsLogger\HelloWorld\ConsoleApp1\obj\Debug\netcoreapp2.1\ConsoleApp1.csproj.CoreCompileInputs.cache
+E:\windowsLogger\HelloWorld\ConsoleApp1\obj\Debug\netcoreapp2.1\ConsoleApp1.AssemblyInfoInputs.cache
+E:\windowsLogger\HelloWorld\ConsoleApp1\obj\Debug\netcoreapp2.1\ConsoleApp1.AssemblyInfo.cs
+E:\windowsLogger\HelloWorld\ConsoleApp1\obj\Debug\netcoreapp2.1\ConsoleApp1.dll
+E:\windowsLogger\HelloWorld\ConsoleApp1\obj\Debug\netcoreapp2.1\ConsoleApp1.pdb

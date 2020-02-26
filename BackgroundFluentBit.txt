@@ -1,0 +1,1 @@
+ Start-Job -ScriptBlock { Start-Process -NoNewWindow -FilePath "E:\windowsLogger\td-agent-bit-1.4.0-win64\td-agent-bit-1.4.0-win64\bin\fluent-bit.exe" -ArgumentList @("-c", "E:\windowsLogger\td-agent-bit-1.4.0-win64\td-agent-bit-1.4.0-win64\conf\fluent-bit.conf", "-e", "E:\windowsLogger\td-agent-bit-1.4.0-win64\td-agent-bit-1.4.0-win64\customoutput\out_oms.so") }

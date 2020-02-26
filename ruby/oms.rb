@@ -1,0 +1,9 @@
+module OMS
+    #Error codes and categories
+    INVALID_OPTION_PROVIDED = 1
+    MISSING_CONFIG = 5
+    HTTP_NON_200 = 7
+    ERROR_SENDING_HTTP = 8
+    MISSING_CERT_UPDATE_ENDPOINT = 10
+    ERROR_GENERATING_CERTS = 11
+end
