@@ -106,7 +106,9 @@ module OMSAgentHelperModule
       topology_request.EntityTypeId = entity_type_id
       topology_request.AuthenticationCertificate = auth_cert
       body_heartbeat = "<?xml version=\"1.0\"?>\n"
-      body_heartbeat.concat(Gyoku.xml({ "AgentTopologyRequest" => {:content! => obj_to_hash(topology_request), :'@xmlns:xsi' => "http://www.w3.org/2001/XMLSchema-instance", :'@xmlns:xsd' => "http://www.w3.org/2001/XMLSchema", :@xmlns => "http://schemas.microsoft.com/WorkloadMonitoring/HealthServiceProtocol/2014/09/"}}))
+      body_heartbeat.concat(Gyoku.xml({ "AgentTopologyRequest" => {:content! => obj_to_hash(topology_request), \
+  :'@xmlns:xsi' => "http://www.w3.org/2001/XMLSchema-instance", :'@xmlns:xsd' => "http://www.w3.org/2001/XMLSchema", \
+  :@xmlns => "http://schemas.microsoft.com/WorkloadMonitoring/HealthServiceProtocol/2014/09/"}}))
       
       return body_heartbeat
     end
@@ -157,9 +159,9 @@ module OMSAgentHelperModule
         csr = OpenSSL::X509::Request.new
         csr.version = x509_version
         csr.subject = OpenSSL::X509::Name.new([
-          ["CN", workspace_id],
-          ["CN", agent_uuid],
-          ["OU", "Windows Monitoring Agent"],
+          ["CN", "{#{workspace_id}}"],
+          ["CN", "{#{agent_uuid}}"],
+          ["OU", "Microsoft Monitoring Agent"],
           ["O", "Microsoft"]])
         csr.public_key = key.public_key
         csr.sign(key, OpenSSL::Digest::SHA256.new)
@@ -245,12 +247,44 @@ module OMSAgentHelperModule
     end
 
     def get_sha256_content(file_path)
-      raise "Error : #{file_path} is not a file" unless File.file?(file_path)
+      #raise "Error : #{file_path} is not a file" unless File.file?(file_path)
       puts "?? SHA 256 CONTENT"
-      puts Digest::SHA256.file(file_path).base64digest
+      #puts Digest::SHA256.file(file_path).base64digest
+
+      @hostname = `hostname`
+
+
+      rawFileCert = File.read "#{@cert_path}"#Base64.encode64(get_cert_server(@cert_path))
+      @rawCert = Base64.encode64(rawFileCert)
+
+      puts @rawCert
+
+      @xmlConent = "<?xml version=\"1.0\"?>" +
+                "<AgentTopologyRequest xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns=\"http://schemas.microsoft.com/WorkloadMonitoring/HealthServiceProtocol/2014/09/\">" +
+                "<FullyQualfiedDomainName>";
+      @xmlConent += "#{@hostname}"
+      @xmlConent += "</FullyQualfiedDomainName>"
+      @xmlConent += "<EntityTypeId>"
+      @xmlConent += "a19881c3-d1f5-4f10-81dd-5a9ea0fe009c"
+      @xmlConent += "</EntityTypeId>"
+      @xmlConent += "<AuthenticationCertificate>"
+      @xmlConent += "#{@rawCert}"
+      @xmlConent += "</AuthenticationCertificate>"
+      @xmlConent += "</AgentTopologyRequest>";
+
+      #puts @xmlConent
       #puts Digest::SHA256.base64digest("<?xml version=\"1.0\"?><AgentTopologyRequest xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns=\"http://schemas.microsoft.com/WorkloadMonitoring/HealthServiceProtocol/2014/09/\"><FullyQualfiedDomainName>kadubey</FullyQualfiedDomainName><EntityTypeId>a19881c3-d1f5-4f10-81dd-5a9ea0fe009c</EntityTypeId><AuthenticationCertificate>MIID+DCCAuCgAwIBAgICeogwDQYJKoZIhvcNAQELBQAwgZUxLTArBgNVBAMMJDVl MGU4N2VhLTY3YWMtNDc3OS1iNmY3LTMwMTczYjY5MTEyYTEtMCsGA1UEAwwkYTE5 ODgxYzMtZDFmNS00ZjEwLTgxZGQtNWE5ZWEwZmUwMDljMSEwHwYDVQQLDBhXaW5k b3dzIE1vbml0b3JpbmcgQWdlbnQxEjAQBgNVBAoMCU1pY3Jvc29mdDAeFw0yMDAy MjAyMTQ1MTZaFw0yMTAyMTkyMTQ1MTZaMIGVMS0wKwYDVQQDDCQ1ZTBlODdlYS02 N2FjLTQ3NzktYjZmNy0zMDE3M2I2OTExMmExLTArBgNVBAMMJGExOTg4MWMzLWQx ZjUtNGYxMC04MWRkLTVhOWVhMGZlMDA5YzEhMB8GA1UECwwYV2luZG93cyBNb25p dG9yaW5nIEFnZW50MRIwEAYDVQQKDAlNaWNyb3NvZnQwggEiMA0GCSqGSIb3DQEB AQUAA4IBDwAwggEKAoIBAQC3e3qk+tq0LNv7DheI5lh6VBWYVsNUknxqSeg7jx+q WP6IXZgem0LdCfNVXZscAW8tGkmKZG34V7Ox9Gg2R7QZVYvt2cW8YRP/iP12AQS4 EvsTimR4F+fU4fFqZYIGqQN5UMwDRj4/jDqHdEaJHCa2yJJediEZ8CaW1c4FvyF5 HheDM2M2/KfTp3VxQU0lK6XJOXi4w9RGUU0bFjlZMIPsnpJrZj+7gp24zZABFc03 ss39jnsIiEnH4go9i9wL9NmSHHsLQzLlewctG/EE3OyJCZ2fTHGkqrOaTUfgcHFO GWnv/+FBo3H2vAccIvxLOhh50nPr/ARTolHWO+vtV691AgMBAAGjUDBOMB0GA1Ud DgQWBBQcuK2OdRhC2ACXC1PIf/dME72wkDAfBgNVHSMEGDAWgBQcuK2OdRhC2ACX C1PIf/dME72wkDAMBgNVHRMEBTADAQH/MA0GCSqGSIb3DQEBCwUAA4IBAQCz+HJa YykRz1bEt6D6QWCTU+lGhLj/rco/5XNss8FMW1kd2oGSpakidZSfoHdJQTkUL8sD xBPrfTDWsbtQsQm4ILGV/iKwsZvZof3JLzY9+Z0M7N9PlFGmX4Uz32IQ2AU7nQmZ JlIybxmOzQ+n+xY9onSFJvvoxwCnftdur7fNIRABr4IEDqnZIlyyMwGg1siOaNTZ SzN5K2X7L6Ir0D0V8KEidu4A/7x5iX40AYBuKiaoNluzYBwcBVxbTHVES/3U7UuU iGAOTBPD8RBCn/wpZRz02xCVLAzhQeIv+EMfRrDtohACeYULmSfAhHv+GvtAYvCJ V2YYsF4pCMQJNipi</AuthenticationCertificate></AgentTopologyRequest>".encode('UTF-16LE'))
-      puts "??"
-      return Digest::SHA256.file(file_path).base64digest
+      puts "???????????"
+
+      @sha256 = Digest::SHA256.new
+      @sha256.update @xmlConent
+
+      puts @sha256.base64digest
+
+      return @sha256.base64digest
+
+      #puts Digest::SHA256.base64digest(@xmlConent)
+      #return Digest::SHA256.base64digest(@xmlConent)
       #return Digest::SHA256.base64digest("<?xml version=\"1.0\"?><AgentTopologyRequest xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns=\"http://schemas.microsoft.com/WorkloadMonitoring/HealthServiceProtocol/2014/09/\"><FullyQualfiedDomainName>kadubey</FullyQualfiedDomainName><EntityTypeId>a19881c3-d1f5-4f10-81dd-5a9ea0fe009c</EntityTypeId><AuthenticationCertificate>MIID+DCCAuCgAwIBAgICeogwDQYJKoZIhvcNAQELBQAwgZUxLTArBgNVBAMMJDVl MGU4N2VhLTY3YWMtNDc3OS1iNmY3LTMwMTczYjY5MTEyYTEtMCsGA1UEAwwkYTE5 ODgxYzMtZDFmNS00ZjEwLTgxZGQtNWE5ZWEwZmUwMDljMSEwHwYDVQQLDBhXaW5k b3dzIE1vbml0b3JpbmcgQWdlbnQxEjAQBgNVBAoMCU1pY3Jvc29mdDAeFw0yMDAy MjAyMTQ1MTZaFw0yMTAyMTkyMTQ1MTZaMIGVMS0wKwYDVQQDDCQ1ZTBlODdlYS02 N2FjLTQ3NzktYjZmNy0zMDE3M2I2OTExMmExLTArBgNVBAMMJGExOTg4MWMzLWQx ZjUtNGYxMC04MWRkLTVhOWVhMGZlMDA5YzEhMB8GA1UECwwYV2luZG93cyBNb25p dG9yaW5nIEFnZW50MRIwEAYDVQQKDAlNaWNyb3NvZnQwggEiMA0GCSqGSIb3DQEB AQUAA4IBDwAwggEKAoIBAQC3e3qk+tq0LNv7DheI5lh6VBWYVsNUknxqSeg7jx+q WP6IXZgem0LdCfNVXZscAW8tGkmKZG34V7Ox9Gg2R7QZVYvt2cW8YRP/iP12AQS4 EvsTimR4F+fU4fFqZYIGqQN5UMwDRj4/jDqHdEaJHCa2yJJediEZ8CaW1c4FvyF5 HheDM2M2/KfTp3VxQU0lK6XJOXi4w9RGUU0bFjlZMIPsnpJrZj+7gp24zZABFc03 ss39jnsIiEnH4go9i9wL9NmSHHsLQzLlewctG/EE3OyJCZ2fTHGkqrOaTUfgcHFO GWnv/+FBo3H2vAccIvxLOhh50nPr/ARTolHWO+vtV691AgMBAAGjUDBOMB0GA1Ud DgQWBBQcuK2OdRhC2ACXC1PIf/dME72wkDAfBgNVHSMEGDAWgBQcuK2OdRhC2ACX C1PIf/dME72wkDAMBgNVHRMEBTADAQH/MA0GCSqGSIb3DQEBCwUAA4IBAQCz+HJa YykRz1bEt6D6QWCTU+lGhLj/rco/5XNss8FMW1kd2oGSpakidZSfoHdJQTkUL8sD xBPrfTDWsbtQsQm4ILGV/iKwsZvZof3JLzY9+Z0M7N9PlFGmX4Uz32IQ2AU7nQmZ JlIybxmOzQ+n+xY9onSFJvvoxwCnftdur7fNIRABr4IEDqnZIlyyMwGg1siOaNTZ SzN5K2X7L6Ir0D0V8KEidu4A/7x5iX40AYBuKiaoNluzYBwcBVxbTHVES/3U7UuU iGAOTBPD8RBCn/wpZRz02xCVLAzhQeIv+EMfRrDtohACeYULmSfAhHv+GvtAYvCJ V2YYsF4pCMQJNipi</AuthenticationCertificate></AgentTopologyRequest>".encode('UTF-16LE'))
     end
 
@@ -271,7 +305,6 @@ module OMSAgentHelperModule
       # Generate the request body
       begin
         body_hb_xml = AgentTopologyRequestHandler.new.handle_request("C:\\omsagentsecrets\\osinfo.txt", "a19881c3-d1f5-4f10-81dd-5a9ea0fe009c", get_cert_server(@cert_path))
-        puts body_hb_xml
         # if !xml_contains_telemetry(body_hb_xml)
         #   puts "No Telemetry data was appended to OMS agent management service topology request"
         # end
@@ -283,8 +316,9 @@ module OMSAgentHelperModule
       headers = {}
       req_date = Time.now.utc.strftime("%Y-%m-%dT%T.%N%:z")
       puts req_date
-      headers[CaseSensitiveString.new("x-ms-Date")] = "2020-02-26T01:44:07.551354900+00:00"#req_date
+      headers[CaseSensitiveString.new("x-ms-Date")] = req_date
       headers["User-Agent"] = get_user_agent
+      headers["x-ms-version"] = "August, 2014"
       headers[CaseSensitiveString.new("Accept-Language")] = "en-US"
       @Sha256_content = get_sha256_content("C:\\omsagentsecrets\\body_onboard.xml")
       auth_key = get_auth_key(req_date, @Sha256_content, "C:\\omsagentsecrets\\shared_auth_key.txt")
@@ -297,6 +331,7 @@ module OMSAgentHelperModule
       # Form POST request and HTTP1
       req,http = form_post_request_and_http(headers, "https://5e0e87ea-67ac-4779-b6f7-30173b69112a.oms.opinsights.azure.com/AgentService.svc/AgentTopologyRequest", body_hb_xml, OpenSSL::X509::Certificate.new(File.open(@cert_path)), OpenSSL::PKey::RSA.new(File.open(@key_path)))
       puts "Generated topology request:\n#{req.body}"
+      File.open("C:\\omsagentsecrets\\body_onboard.xml", "w") { |file| file.write(req.body) }
       # Submit request
       begin
         res = nil
@@ -307,6 +342,7 @@ module OMSAgentHelperModule
           
       if !res.nil?
         puts "OMS agent management service topology request response code: #{res.code}"
+        puts "#{res.body}"
         if res.code == "200"
           cert_apply_res = apply_certificate_update_endpoint(res.body)
           if cert_apply_res.class != String
@@ -403,7 +439,7 @@ if __FILE__ == $0
   agent_uuid = "a19881c3-d1f5-4f10-81dd-5a9ea0fe009c" #SecureRandom.uuid
   maintenance = OMSAgentHelperModule::OnboardingHelper.new()
   # Currently generated certs, uncomment when ready to use
-  #ret_code = maintenance.generate_certs(workspace_id, agent_uuid)
-  maintenance.register_certs(certificate_update_endpoint)
+  ret_code = maintenance.generate_certs(workspace_id, agent_uuid)
+  #maintenance.register_certs(certificate_update_endpoint)
   exit ret_code
 end
