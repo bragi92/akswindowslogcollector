@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"os"
 	"log"
 	"crypto/rand"
 	"crypto/sha256"
@@ -13,6 +14,20 @@ import (
 )
 
 func main() {
+
+	loganalyticsWorkspaceID := os.Getenv("CI_WSID1")
+	logAnalyticsDomain := os.Getenv("CI_DOMAIN")
+
+	if len(loganalyticsWorkspaceID) == 0 {
+		log.Printf("Fuck")
+	}	
+
+	if len(logAnalyticsDomain) == 0 {
+		log.Printf(logAnalyticsDomain)
+		log.Printf("damn")
+	}
+
+
 	sig, err := signWithMyIdentity("Ben Toews", "hello, world!")
 	if err != nil {
 		log.Printf("%s \n", err.Error())
@@ -66,7 +81,7 @@ func signWithMyIdentity(cn, msg string) ([]byte, error) {
 		} else {
 
 
-		log.Printf(crt.Issuer.CommonName)
+		//log.Printf(crt.Issuer.CommonName)
 
 		if crt.Subject.CommonName == "5e0e87ea-67ac-4779-b6f7-30173b69112a" {
 			me = ident

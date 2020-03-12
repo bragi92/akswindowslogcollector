@@ -1,0 +1,54 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+ name: omsagent-private-preview-windows
+ namespace: omsagent-private-preview-namespace
+spec:
+ updateStrategy:
+  type: RollingUpdate
+ template:
+  metadata:
+   labels:
+    dsName: "omsagent-private-preview-windows-ds"
+  spec:   
+   containers:
+     - name: omsagent-private-preview-windows 
+       image: bragi92/fluentbit:03062020_1
+       imagePullPolicy: IfNotPresent
+       resources:
+        limits:
+         cpu: 800m
+         memory: 800Mi
+        requests:
+         cpu: 500m
+         memory: 500Mi
+       env:       
+       - name: CI_WSID
+         value: "5e0e87ea-67ac-4779-b6f7-30173b69112a"
+       - name: CI_SHARED_KEY
+         value: "nqWJ0bSZo7g5p4hr4QLFqMB438csAzPb74HMUHb8086Ne6lrkF/vVUyg/jHDGWHACaUJVX6W/6hxX2Gh+2Uhcg=="
+       - name: CI_DOMAIN
+         value: "opinsights.azure.com"
+       - name: CI_CRT_LOCATION
+         value: "C://oms.crt"
+       - name: CI_KEY_LOCATION
+         value: "C://oms.key"
+       - name: CI_NODE_IP
+         valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+       volumeMounts:
+        - mountPath: \\.\pipe\docker_engine
+          name: docker-engine-pipe  
+        - mountPath: "C:\\ProgramData\\Docker\\cotnainers"
+          name: "C:\\fakecontainer"
+          readOnly: true                       
+   nodeSelector:
+    beta.kubernetes.io/os: windows    
+   # Tolerate a NoSchedule taint on master that ACS Engine sets.
+   tolerations:
+    - key: "node-role.kubernetes.io/master"
+      operator: "Equal"
+      value: "true"
+      effect: "NoSchedule"
+         

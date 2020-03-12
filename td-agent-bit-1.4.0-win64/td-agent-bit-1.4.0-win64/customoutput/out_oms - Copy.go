@@ -43,7 +43,7 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 	// 	Log("Telemetry is not enabled for the plugin %s \n", output.FLBPluginConfigKey(ctx, "Name"))
 	// 	return output.FLB_OK
 	// }
-	log.Printf("Hello cruel world")
+	//log.Printf("Hello cruel world")
 	CreateHTTPClient()
 	return output.FLB_OK
 }

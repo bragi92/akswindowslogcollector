@@ -7,8 +7,8 @@ import (
 	"C"
 	"encoding/json"
 	"fmt"
-	// "os"
-	// "strings"
+	"os"
+	"strings"
 	"time"
 	"unsafe"
 	"bytes"
@@ -43,7 +43,7 @@ func FLBPluginInit(ctx unsafe.Pointer) int {
 	// 	Log("Telemetry is not enabled for the plugin %s \n", output.FLBPluginConfigKey(ctx, "Name"))
 	// 	return output.FLB_OK
 	// }
-	log.Printf("Hello cruel world")
+	//log.Printf("Hello cruel world")
 	CreateHTTPClient()
 	return output.FLB_OK
 }
@@ -56,7 +56,7 @@ var (
 
 //export FLBPluginFlush
 func FLBPluginFlush(data unsafe.Pointer, length C.int, tag *C.char) int {
-	log.Printf("FLBPluginFlush is starting...")
+	//log.Printf("FLBPluginFlush is starting...")
 
 
 	var ret int
@@ -84,7 +84,7 @@ func FLBPluginFlush(data unsafe.Pointer, length C.int, tag *C.char) int {
 	// 	return PostTelegrafMetricsToLA(records)
 	// }
 
-	log.Printf("I'm calling PostDataHelper...")
+	//log.Printf("I'm calling PostDataHelper...")
 
 	return PostDataHelper(records)
 }
@@ -136,7 +136,7 @@ func ToString(s interface{}) string {
 
 // CreateHTTPClient used to create the client for sending post requests to OMSEndpoint
 func CreateHTTPClient() {
-	cert, err := tls.LoadX509KeyPair("C:\\omsagentwindows\\oms.crt", "C:\\omsagentwindows\\oms.key")
+	cert, err := tls.LoadX509KeyPair("C:\\oms.crt", "C:\\oms.key")
 	if err != nil {
 		// message := fmt.Sprintf("Error when loading cert %s", err.Error())
 		// SendException(message)
@@ -157,21 +157,67 @@ func CreateHTTPClient() {
 		Timeout:   30 * time.Second,
 	}
 
-	log.Printf("Successfully created HTTP Client")
+	// log.Printf("Successfully created HTTP Client")
 }
+
+// GetContainerIDK8sNamespacePodNameFromFileName Gets the container ID, k8s namespace and pod name From the file Name
+// sample filename kube-proxy-dgcx7_kube-system_kube-proxy-8df7e49e9028b60b5b0d0547f409c455a9567946cf763267b7e6fa053ab8c182.log
+func GetContainerIDK8sNamespacePodNameFromFileName(filename string) (string, string, string) {
+	id := ""
+	ns := ""
+	podName := ""
+
+	start := strings.LastIndex(filename, "-")
+	end := strings.LastIndex(filename, ".")
+
+	if start >= end || start == -1 || end == -1 {
+		id = ""
+	} else {
+		id = filename[start+1 : end]
+	}
+
+	start = strings.Index(filename, "_")
+	end = strings.LastIndex(filename, "_")
+
+	if start >= end || start == -1 || end == -1 {
+		ns = ""
+	} else {
+		ns = filename[start+1 : end]
+	}
+
+	start = strings.Index(filename, "/containers/")
+	end = strings.Index(filename, "_")
+
+	if start >= end || start == -1 || end == -1 {
+		podName = ""
+	} else {
+		podName = filename[(start + len("/containers/")):end]
+	}
+
+	return id, ns, podName
+}
+
 
 
 // PostDataHelper sends data to the OMS endpoint
 func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
-	// start := time.Now()
+	start := time.Now()
 	var dataItems []DataItem
 
-	log.Printf("PostDataHelper starts")
+	// log.Printf("PostDataHelper starts")
+
+	var computer string = os.Getenv("CI_HOSTNAME")
 
 	for _, record := range tailPluginRecords {
-		log.Printf(ToString(record["log"]));
-		containerID := "388b1a08956c78beab8cbaea5168d89a1e76c019d9ce53994bea50dff3457b0a"
-		_ = "podname"
+		containerID, k8sNamespace, _ := GetContainerIDK8sNamespacePodNameFromFileName(ToString(record["filepath"]))
+
+		// Ignore 
+		if strings.EqualFold("omsagent-private-preview-namespace", k8sNamespace) {
+			log.Printf("We're reading from the private preview namespace")
+		}
+
+		// containerID := "388b1a08956c78beab8cbaea5168d89a1e76c019d9ce53994bea50dff3457b0a"
+		// _ = "podname"
 		logEntrySource := ToString(record["stream"]);
 
 		stringMap := make(map[string]string)
@@ -181,8 +227,8 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		stringMap["LogEntryTimeStamp"] = ToString(record["time"])
 		stringMap["SourceSystem"] = "Containers"
 		stringMap["Id"] = containerID
-		stringMap["Image"] = "bragi92/python"
-		stringMap["Name"] = "kaveeshwindowspython"
+		stringMap["Image"] = "[ImageName-notavailableyet]"
+		stringMap["Name"] = "[ContainerName-notavailbleyet]"
 
 		var dataItem DataItem
 		dataItem = DataItem{
@@ -190,9 +236,10 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			LogEntry:              stringMap["LogEntry"],
 			LogEntrySource:        stringMap["LogEntrySource"],
 			LogEntryTimeStamp:     stringMap["LogEntryTimeStamp"],
-			LogEntryTimeOfCommand: stringMap["LogEntryTimeStamp"],
+			// LogEntryTimeOfCommand: stringMap["LogEntryTimeStamp"], // start.Format(time.RFC3339) -> This is the value in the linux side
+			LogEntryTimeOfCommand: start.Format(time.RFC3339),
 			SourceSystem:          stringMap["SourceSystem"],
-			Computer:              "kaveeshwindowsdesktop",
+			Computer:              computer,
 			Image:                 stringMap["Image"],
 			Name:                  stringMap["Name"],
 		
@@ -221,8 +268,22 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			return output.FLB_OK
 		}
 
-		// /subscriptions/692aea0b-2d89-4e7e-ae30-fffe40782ee2/resourceGroups/rashmi-1-17-test/providers/Microsoft.OperationalInsights/workspaces/rashmi-1-17-test
-		OMSEndpoint := "https://82b419ad-6b6c-4a03-a1eb-34b05c8da3ee.ods.opinsights.azure.com/OperationalData.svc/PostJsonDataItems"
+		loganalyticsWorkspaceID := os.Getenv("CI_WSID")
+		logAnalyticsDomain := os.Getenv("CI_DOMAIN")
+
+		if len(loganalyticsWorkspaceID) == 0 {
+			log.Printf("loganalyticsWorkspaceID is empty : Please set the environment variable CI_WSID to it.")
+			return output.FLB_RETRY
+		}	
+	
+		if len(logAnalyticsDomain) == 0 {
+			log.Printf("logAnalyticsDomain is empty : Please set the environment variable CI_DOMAIN to it.")
+			return output.FLB_RETRY
+		}
+	
+		// kaveeshwin - la workspace in comment below
+		// OMSEndpoint := "https://5e0e87ea-67ac-4779-b6f7-30173b69112a.ods.opinsights.azure.com/OperationalData.svc/PostJsonDataItems"
+		OMSEndpoint := "https://" + loganalyticsWorkspaceID + ".ods." + logAnalyticsDomain + "/OperationalData.svc/PostJsonDataItems"
 
 		req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
 
@@ -232,7 +293,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		// 	req.Header.Set("x-ms-AzureResourceId", ResourceID)
 		// }
 
-		log.Printf("Sending HTTP Request")
+		//log.Printf("Sending HTTP Request")
 
 		resp, err := HTTPClient.Do(req)
 
@@ -253,13 +314,13 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			return output.FLB_RETRY
 		}
 
-		log.Printf("Status code == %s", resp.StatusCode)
+		//log.Printf("Status code == %s", resp.StatusCode)
 
-		log.Printf("Closing http")
+		//log.Printf("Closing http")
 
 		defer resp.Body.Close()
 
-		log.Printf("Successfully flushed...")
+		// log.Printf("Successfully flushed...")
 		// Log("PostDataHelper::Info::Successfully flushed %d records in %s", numRecords, elapsed)
 	
 	}
